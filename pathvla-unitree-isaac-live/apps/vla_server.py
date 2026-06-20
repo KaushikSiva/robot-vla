@@ -172,6 +172,45 @@ def _normalize_plan_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if "subgoals" in payload:
         return payload
 
+    if "action" in payload and "args" in payload and isinstance(payload["args"], dict):
+        action = payload.get("type") or payload.get("action")
+        args = payload["args"]
+        target = args.get("target") or payload.get("target")
+        if action and target:
+            normalized_action = {
+                "go_to": "navigate",
+                "goto": "navigate",
+                "navigate": "navigate",
+                "inspect": "inspect",
+                "pickup": "pickup",
+                "pick_up": "pickup",
+                "drop": "drop",
+                "return_home": "return_home",
+                "go_home": "return_home",
+            }.get(str(action).lower(), str(action).lower())
+
+            constraints = args.get("constraints")
+            avoid = args.get("avoid") or payload.get("avoid")
+            safe_distance_m = args.get("safe_distance_m") or payload.get("safe_distance_m")
+            if not isinstance(constraints, dict):
+                constraints = {}
+            if isinstance(avoid, list) and "avoid" not in constraints:
+                constraints["avoid"] = avoid
+            if isinstance(safe_distance_m, (int, float)) and "safe_distance_m" not in constraints:
+                constraints["safe_distance_m"] = float(safe_distance_m)
+            constraints.setdefault("avoid", [])
+            constraints.setdefault("safe_distance_m", 0.6)
+
+            return {
+                "subgoals": [
+                    {
+                        "type": normalized_action,
+                        "target": target,
+                        "constraints": constraints,
+                    }
+                ]
+            }
+
     if "plan" not in payload or not isinstance(payload["plan"], list):
         return payload
 
