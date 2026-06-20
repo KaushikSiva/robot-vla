@@ -76,6 +76,7 @@ pathvla-unitree-isaac-live/
 - `OPENAI_API_KEY` for the bundled real VLA server
 - `OPENAI_MODEL` optional, defaults in `.env.example`
 - `UNITREE_G1_USD_PATH`
+- `HOST_WORKSPACE_ROOT`
 - `BREV_PUBLIC_HOST`
 - `LIVESTREAM_PORTS`
 
@@ -160,7 +161,8 @@ This runs headless and records logs plus video when capture support is available
 
 ```bash
 export VLA_ENDPOINT="https://your-vla-server/infer"
-export UNITREE_G1_USD_PATH="/path/to/unitree_g1.usd"
+export HOST_WORKSPACE_ROOT="/home/shadeform/workspace"
+export UNITREE_G1_USD_PATH="/host_workspace/unitree_assets/unitree_model/G1/29dof/usd/g1_29dof_rev_1_0/g1_29dof_rev_1_0.usd"
 export BREV_PUBLIC_HOST="<your-brev-host>"
 export ISAAC_BASE_IMAGE="<official-compatible-isaac-lab-or-isaac-sim-image>"
 

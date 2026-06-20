@@ -27,6 +27,7 @@ services:
     volumes:
       - ..:/workspace/pathvla-unitree-isaac-live
       - ../outputs:/workspace/pathvla-unitree-isaac-live/outputs
+      - ${HOST_WORKSPACE_ROOT:-/tmp}:/host_workspace
       - ${HOME}/.cache/ov:/root/.cache/ov
       - ${HOME}/.nvidia-omniverse:/root/.nvidia-omniverse
       - ${HOME}/.local/share/ov:/root/.local/share/ov
