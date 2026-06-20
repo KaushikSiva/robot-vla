@@ -55,7 +55,7 @@ class WaypointController:
                 for waypoint in waypoint_plan.waypoints:
                     current_pose = self._move_to_waypoint(current_pose, waypoint)
                     result.trace.append(list(current_pose))
-                    self._check_clearance(current_pose, scene_snapshot)
+                    self._check_clearance(current_pose, scene_snapshot, active_target=waypoint_plan.target)
                 result.completed_subgoals += 1
             except PlanningError as exc:
                 message = f"Execution failed for {waypoint_plan.target}: {exc}"
@@ -94,8 +94,10 @@ class WaypointController:
         self.step_fn()
         return list(target)
 
-    def _check_clearance(self, pose: list[float], scene_snapshot: SceneSnapshotModel) -> None:
+    def _check_clearance(self, pose: list[float], scene_snapshot: SceneSnapshotModel, active_target: str | None = None) -> None:
         for obj in scene_snapshot.objects:
+            if active_target is not None and obj.name == active_target:
+                continue
             if obj.type not in {"obstacle", "inspectable", "container"}:
                 continue
             distance = math.dist(pose[:2], obj.pose[:2]) - obj.avoidance_radius

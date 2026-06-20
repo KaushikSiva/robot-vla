@@ -45,7 +45,7 @@ class IsaacRecorder:
         video_path = self.output_dir / "rollout.mp4"
         final_frame_path = self.output_dir / "final_frame.png"
         try:
-            with imageio.get_writer(video_path, fps=10) as writer:
+            with imageio.get_writer(video_path, fps=10, format="FFMPEG") as writer:
                 for frame_path in self.frame_paths:
                     writer.append_data(imageio.imread(frame_path))
             imageio.imwrite(final_frame_path, imageio.imread(self.frame_paths[-1]))
