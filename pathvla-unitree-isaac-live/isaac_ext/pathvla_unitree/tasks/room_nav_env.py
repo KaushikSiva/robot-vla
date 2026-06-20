@@ -58,17 +58,23 @@ def build_plan(args, scene_snapshot, run_dir: Path, logger):
     if args.require_vla:
         vla_config = load_vla_config()
         client = HTTPVLAClient(load_vla_endpoint_config(timeout_s=vla_config.vla.request_timeout_s))
-        return client.infer(
+        logger.info("Calling VLA endpoint for instruction: %s", args.instruction)
+        plan = client.infer(
             instruction=args.instruction,
             scene=scene_snapshot,
             output_dir=run_dir,
             include_camera_images=vla_config.vla.include_camera_images,
         )
+        logger.info("Received VLA response with %d subgoals", len(plan.subgoals))
+        return plan
     if args.allow_rule_planner:
         message = "DEBUG ONLY: rule planner enabled. This is not VLA mode."
         logger.warning(message)
         print(message)
-        return rule_based_debug_plan(args.instruction)
+        logger.info("Calling debug rule planner for instruction: %s", args.instruction)
+        plan = rule_based_debug_plan(args.instruction)
+        logger.info("Received debug rule planner response with %d subgoals", len(plan.subgoals))
+        return plan
     raise ConfigurationError("VLA planning is required unless --allow-rule-planner is explicitly passed.")
 
 
@@ -133,7 +139,9 @@ def run(args) -> RunResultModel:
         from isaac_ext.pathvla_unitree.tasks.waypoint_controller import WaypointController
 
         stage = create_stage()
+        logger.info("USD stage created")
         semantic_scene = build_scene(stage, scene_cfg, logger)
+        logger.info("Semantic scene built with %d objects and %d cameras", len(semantic_scene.object_states), len(semantic_scene.camera_prim_paths))
         robot_handle = load_robot(
             stage=stage,
             robot_cfg=robot_cfg,
@@ -141,28 +149,50 @@ def run(args) -> RunResultModel:
             allow_kinematic_control=request.allow_kinematic_control,
             logger=logger,
         )
+        logger.info(
+            "Robot handle ready: name=%s prim_path=%s proxy=%s control_mode=%s",
+            robot_handle.name,
+            robot_handle.prim_path,
+            robot_handle.is_proxy,
+            robot_handle.control_mode,
+        )
         for _ in range(5):
             simulation_app.update()
+        logger.info("Initial post-load simulation updates completed")
 
         livestream_info = configure_livestream(request.live, livestream_cfg, logger)
+        logger.info("Livestream configured: mode=%s", livestream_info["mode"])
         robot_pose = get_prim_translation(stage, robot_handle.prim_path)
+        logger.info("Robot pose sampled: %s", robot_pose)
         refresh_semantic_scene_poses(stage, semantic_scene)
+        logger.info("Semantic scene poses refreshed")
         scene_snapshot = semantic_scene.to_snapshot(robot_name=robot_handle.name, robot_pose=robot_pose)
+        logger.info("Scene snapshot built")
         plan = build_plan(args, scene_snapshot, run_dir, logger)
+        logger.info("Plan received with %d subgoals", len(plan.subgoals))
         write_json(run_dir / "plan.json", plan.model_dump(mode="json"))
+        logger.info("Plan persisted to %s", run_dir / "plan.json")
 
         planner = AStarWaypointPlanner()
         waypoint_plans = []
         for subgoal in plan.subgoals:
+            logger.info("Planning waypoint path for subgoal type=%s target=%s", subgoal.type, subgoal.target)
             refresh_semantic_scene_poses(stage, semantic_scene)
             current_pose = get_prim_translation(stage, robot_handle.prim_path)
             subgoal_scene = semantic_scene.to_snapshot(robot_name=robot_handle.name, robot_pose=current_pose)
             waypoint_plan = planner.plan(subgoal_scene, subgoal)
             waypoint_plans.append(waypoint_plan)
+            logger.info(
+                "Waypoint path ready for target=%s with %d waypoints length=%.3f m",
+                waypoint_plan.target,
+                len(waypoint_plan.waypoints),
+                waypoint_plan.path_length_m,
+            )
         write_json(
             run_dir / "waypoints.json",
             {"waypoint_plans": [wp.model_dump(mode="json") for wp in waypoint_plans]},
         )
+        logger.info("Waypoint plans persisted to %s", run_dir / "waypoints.json")
 
         preferred_camera_path = semantic_scene.camera_prim_paths[0] if semantic_scene.camera_prim_paths else None
         recorder = IsaacRecorder(
@@ -171,25 +201,36 @@ def run(args) -> RunResultModel:
             require_video=request.require_video,
             preferred_camera_path=preferred_camera_path,
         )
+        logger.info("Recorder initialized with preferred camera %s", preferred_camera_path)
         controller = WaypointController(
             stage=stage,
             robot_handle=robot_handle,
             step_fn=simulation_app.update,
             logger=logger,
         )
+        logger.info("Waypoint controller initialized")
         for frame_index in range(3):
             if request.record_video:
                 recorder.capture_frame(frame_index)
             simulation_app.update()
+        logger.info("Pre-execution warmup frames complete")
         execution = controller.execute(
             waypoint_plans=waypoint_plans,
             scene_snapshot=scene_snapshot,
             trace_path=run_dir / "trace.json",
         )
+        logger.info(
+            "Execution completed: completed_subgoals=%d failures=%d trace_samples=%d",
+            execution.completed_subgoals,
+            len(execution.failures),
+            len(execution.trace),
+        )
         if request.record_video:
             for frame_index in range(3, 3 + len(execution.trace)):
                 recorder.capture_frame(frame_index)
+            logger.info("Post-execution frame capture complete for %d trace frames", len(execution.trace))
         video_path, final_frame_path = recorder.finalize_video() if request.record_video else (None, None)
+        logger.info("Video finalize complete: video_path=%s final_frame_path=%s", video_path, final_frame_path)
         metrics = summarize_run_metrics(
             trace=execution.trace,
             scene=scene_snapshot,
@@ -197,6 +238,7 @@ def run(args) -> RunResultModel:
             total_subgoals=len(waypoint_plans),
             planner_path_length_m=sum(plan.path_length_m for plan in waypoint_plans),
         )
+        logger.info("Metrics computed: %s", metrics)
 
         status = "completed" if execution.completed_subgoals == len(waypoint_plans) else "failed"
         result = RunResultModel(
