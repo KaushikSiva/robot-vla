@@ -217,6 +217,10 @@ The dashboard controls real Isaac runs. It does not emulate simulation in the br
 ## Real VLA Server
 
 This repo now includes a real HTTP VLA server at [apps/vla_server.py](./apps/vla_server.py).
+It supports either:
+
+- OpenAI cloud models
+- a same-host or in-network OpenAI-compatible server, such as a locally served Gemma 4 endpoint
 
 Two supported deployment modes:
 
@@ -241,6 +245,28 @@ Important:
 - `127.0.0.1` does not work from the Isaac container unless the VLA server is running inside that same container.
 - If the VLA server runs as a separate process on the same VM, use `host.docker.internal`.
 - If the VLA server runs as the bundled compose service, use `http://vla-server:5555/infer`.
+
+## Gemma 4 On The Same Host
+
+If your Gemma 4 server runs on the same VM and exposes an OpenAI-compatible API, configure:
+
+```bash
+export VLA_LLM_BASE_URL="http://host.docker.internal:8000/v1"
+export VLA_LLM_MODEL="gemma-4"
+export VLA_ENDPOINT="http://vla-server:5555/infer"
+```
+
+Then start the planner service:
+
+```bash
+docker compose -f docker/docker-compose.yaml up -d vla-server
+python scripts/test_vla_endpoint.py
+```
+
+In this setup:
+
+- Isaac container -> `vla-server`
+- bundled VLA server -> your same-host Gemma 4 server at `host.docker.internal`
 
 About GR00T:
 

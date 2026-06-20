@@ -74,16 +74,28 @@ app = FastAPI(title="PathVLA VLA Server", version=__version__)
 
 
 def _require_openai_client() -> OpenAI:
-    api_key = os.getenv("OPENAI_API_KEY")
+    base_url = os.getenv("VLA_LLM_BASE_URL")
+    api_key = os.getenv("VLA_LLM_API_KEY") or os.getenv("OPENAI_API_KEY")
+    if base_url:
+        # OpenAI-compatible local/server backends such as Gemma served via vLLM can run without auth.
+        return OpenAI(base_url=base_url, api_key=api_key or "local-no-auth")
     if not api_key:
-        raise HTTPException(status_code=500, detail="OPENAI_API_KEY is required for the VLA server.")
+        raise HTTPException(
+            status_code=500,
+            detail="Set VLA_LLM_BASE_URL for a local OpenAI-compatible server or OPENAI_API_KEY for OpenAI cloud.",
+        )
     return OpenAI(api_key=api_key)
 
 
 def _resolve_model_name(payload: VLARequestModel) -> str:
-    model_name = payload.model_name or os.getenv("OPENAI_MODEL") or os.getenv("VLA_MODEL_NAME")
+    model_name = (
+        payload.model_name
+        or os.getenv("VLA_LLM_MODEL")
+        or os.getenv("OPENAI_MODEL")
+        or os.getenv("VLA_MODEL_NAME")
+    )
     if not model_name:
-        raise HTTPException(status_code=500, detail="Set OPENAI_MODEL or include model_name in the request.")
+        raise HTTPException(status_code=500, detail="Set VLA_LLM_MODEL or include model_name in the request.")
     return model_name
 
 

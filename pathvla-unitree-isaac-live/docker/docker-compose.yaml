@@ -52,6 +52,9 @@ services:
     container_name: pathvla-vla-server
     user: "0:0"
     environment:
+      VLA_LLM_BASE_URL: ${VLA_LLM_BASE_URL:-}
+      VLA_LLM_API_KEY: ${VLA_LLM_API_KEY:-}
+      VLA_LLM_MODEL: ${VLA_LLM_MODEL:-gemma-4}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
       PATHVLA_VLA_HOST: ${PATHVLA_VLA_HOST:-0.0.0.0}
