@@ -32,7 +32,7 @@ def _spawn_ground_plane(stage, bounds) -> None:
     xformable = UsdGeom.Xformable(plane)
     xformable.AddTranslateOp().Set(Gf.Vec3d(*center))
     xformable.AddScaleOp().Set(Gf.Vec3f(*size))
-    plane.CreateDisplayColorAttr([Gf.Vec3f(0.55, 0.55, 0.55)])
+    plane.CreateDisplayColorAttr([Gf.Vec3f(0.42, 0.42, 0.44)])
     UsdPhysics.CollisionAPI.Apply(plane.GetPrim())
 
 
@@ -54,27 +54,27 @@ def _spawn_walls(stage, scene_cfg: SceneConfigModel) -> None:
         xformable = UsdGeom.Xformable(wall)
         xformable.AddTranslateOp().Set(Gf.Vec3d(*pose))
         xformable.AddScaleOp().Set(Gf.Vec3f(*size))
-        wall.CreateDisplayColorAttr([Gf.Vec3f(0.85, 0.85, 0.88)])
+        wall.CreateDisplayColorAttr([Gf.Vec3f(0.76, 0.77, 0.8)])
         UsdPhysics.CollisionAPI.Apply(wall.GetPrim())
 
 
 def _spawn_lighting(stage) -> None:
     dome = UsdLux.DomeLight.Define(stage, "/World/Lights/DomeLight")
-    dome.CreateIntensityAttr(1400.0)
-    dome.CreateExposureAttr(1.5)
-    dome.CreateColorAttr(Gf.Vec3f(1.0, 0.98, 0.94))
+    dome.CreateIntensityAttr(350.0)
+    dome.CreateExposureAttr(0.2)
+    dome.CreateColorAttr(Gf.Vec3f(0.97, 0.98, 1.0))
 
     key_light = UsdLux.DistantLight.Define(stage, "/World/Lights/KeyLight")
-    key_light.CreateIntensityAttr(3500.0)
+    key_light.CreateIntensityAttr(1600.0)
     key_light.CreateAngleAttr(0.6)
-    key_light.CreateColorAttr(Gf.Vec3f(1.0, 0.97, 0.92))
+    key_light.CreateColorAttr(Gf.Vec3f(1.0, 0.96, 0.9))
     key_xform = UsdGeom.Xformable(key_light)
     key_xform.AddRotateXYZOp().Set(Gf.Vec3f(315.0, 0.0, 35.0))
 
     fill_light = UsdLux.SphereLight.Define(stage, "/World/Lights/FillLight")
-    fill_light.CreateIntensityAttr(45000.0)
+    fill_light.CreateIntensityAttr(6000.0)
     fill_light.CreateRadiusAttr(0.5)
-    fill_light.CreateColorAttr(Gf.Vec3f(0.92, 0.95, 1.0))
+    fill_light.CreateColorAttr(Gf.Vec3f(0.9, 0.93, 1.0))
     fill_xform = UsdGeom.Xformable(fill_light)
     fill_xform.AddTranslateOp().Set(Gf.Vec3d(0.0, -1.5, 3.2))
 
@@ -109,7 +109,7 @@ def build_scene(stage, scene_cfg: SceneConfigModel, logger) -> SemanticSceneStat
         camera = UsdGeom.Camera.Define(stage, f"/World/Cameras/{camera_cfg.name}")
         camera.CreateFocalLengthAttr(28.0 if camera_cfg.name == "main_camera" else 18.0)
         camera.CreateClippingRangeAttr(Gf.Vec2f(0.01, 1000.0))
-        camera.CreateExposureAttr(0.8)
+        camera.CreateExposureAttr(0.0)
         _set_transform_with_lookat(camera, camera_cfg.pose, camera_cfg.look_at)
         camera_paths.append(f"/World/Cameras/{camera_cfg.name}")
         logger.info("Created camera %s", camera_cfg.name)

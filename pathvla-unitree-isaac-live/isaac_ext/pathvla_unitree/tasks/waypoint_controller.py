@@ -85,14 +85,15 @@ class WaypointController:
                 step_size = min(0.08, norm)
                 x += step_size * dx / norm
                 y += step_size * dy / norm
-                z = target[2]
+                z = current_pose[2]
             else:
                 raise PlanningError(f"Unsupported control mode {self.robot_handle.control_mode}")
             _set_robot_translation(self.stage, self.robot_handle.prim_path, [x, y, z])
             self.step_fn()
-        _set_robot_translation(self.stage, self.robot_handle.prim_path, target)
+        final_pose = [target[0], target[1], current_pose[2]]
+        _set_robot_translation(self.stage, self.robot_handle.prim_path, final_pose)
         self.step_fn()
-        return list(target)
+        return list(final_pose)
 
     def _check_clearance(self, pose: list[float], scene_snapshot: SceneSnapshotModel, active_target: str | None = None) -> None:
         for obj in scene_snapshot.objects:

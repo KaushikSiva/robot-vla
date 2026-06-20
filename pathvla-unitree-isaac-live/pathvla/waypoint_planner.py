@@ -38,7 +38,7 @@ class AStarWaypointPlanner:
         return WaypointPlanModel(
             target=subgoal.target,
             subgoal_type=subgoal.type,
-            waypoints=[[x, y, 0.0] for x, y in world_path],
+            waypoints=[[x, y, float(scene.robot.pose[2])] for x, y in world_path],
             path_length_m=path_length,
             avoided_objects=avoided_objects,
             diagnostics=PlannerDiagnosticModel(

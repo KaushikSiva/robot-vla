@@ -7,7 +7,7 @@ scene:
   room:
     wall_height: 2.5
     wall_thickness: 0.1
-  robot_spawn: [0.0, 0.0, 0.0]
+  robot_spawn: [0.0, 0.0, 0.82]
   objects:
     - name: red_bin
       type: container
@@ -46,8 +46,8 @@ scene:
       avoidance_radius: 0.3
   cameras:
     - name: main_camera
-      pose: [5.4, -5.6, 3.6]
-      look_at: [0.2, 0.1, 1.0]
+      pose: [3.4, -3.8, 2.5]
+      look_at: [0.2, 0.3, 1.0]
     - name: top_down_camera
       pose: [0.0, 0.0, 9.0]
       look_at: [0.0, 0.0, 0.0]

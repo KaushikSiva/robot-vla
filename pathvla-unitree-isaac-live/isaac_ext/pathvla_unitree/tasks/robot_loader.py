@@ -48,16 +48,18 @@ def load_robot(
     allow_proxy: bool,
     allow_kinematic_control: bool,
     logger,
+    spawn_translation: list[float] | None = None,
 ) -> RobotHandle:
     asset_env = robot_cfg.robot.usd_path_env
     usd_path = os.getenv(asset_env)
     controller = _instantiate_controller(robot_cfg)
     prim_path = robot_cfg.robot.default_prim_path
+    resolved_spawn_translation = list(spawn_translation or robot_cfg.robot.spawn_translation)
 
     if usd_path and Path(usd_path).exists():
         prim = stage.DefinePrim(prim_path, "Xform")
         prim.GetReferences().AddReference(usd_path)
-        _set_translation(prim, robot_cfg.robot.spawn_translation)
+        _set_translation(prim, resolved_spawn_translation)
         logger.info("Loaded Unitree G1 asset from %s", usd_path)
         if controller is not None:
             return RobotHandle(
@@ -91,7 +93,7 @@ def load_robot(
     proxy.CreateRadiusAttr(0.2)
     proxy.CreateHeightAttr(1.4)
     proxy.CreateDisplayColorAttr([Gf.Vec3f(0.95, 0.95, 0.2)])
-    _set_translation(proxy.GetPrim(), [0.0, 0.0, 0.9])
+    _set_translation(proxy.GetPrim(), [resolved_spawn_translation[0], resolved_spawn_translation[1], resolved_spawn_translation[2] + 0.9])
 
     if controller is not None:
         return RobotHandle(

@@ -162,6 +162,7 @@ def run(args) -> RunResultModel:
             allow_proxy=request.allow_proxy,
             allow_kinematic_control=request.allow_kinematic_control,
             logger=logger,
+            spawn_translation=scene_cfg.scene.robot_spawn,
         )
         logger.info(
             "Robot handle ready: name=%s prim_path=%s proxy=%s control_mode=%s",
