@@ -91,13 +91,6 @@ def parse_args(argv: list[str] | None = None):
 
 
 def run(args) -> RunResultModel:
-    from isaac_ext.pathvla_unitree.tasks.livestream import configure_livestream
-    from isaac_ext.pathvla_unitree.tasks.observations import get_prim_translation, refresh_semantic_scene_poses
-    from isaac_ext.pathvla_unitree.tasks.recorder import IsaacRecorder
-    from isaac_ext.pathvla_unitree.tasks.robot_loader import load_robot
-    from isaac_ext.pathvla_unitree.tasks.scene_builder import build_scene
-    from isaac_ext.pathvla_unitree.tasks.waypoint_controller import WaypointController
-
     request = RunRequestModel(
         instruction=args.instruction,
         scene=args.scene,
@@ -131,6 +124,14 @@ def run(args) -> RunResultModel:
         livestream_cfg = load_livestream_config()
         headless = request.live == RunMode.NONE
         simulation_app = launch_simulation_app(headless=headless)
+
+        from isaac_ext.pathvla_unitree.tasks.livestream import configure_livestream
+        from isaac_ext.pathvla_unitree.tasks.observations import get_prim_translation, refresh_semantic_scene_poses
+        from isaac_ext.pathvla_unitree.tasks.recorder import IsaacRecorder
+        from isaac_ext.pathvla_unitree.tasks.robot_loader import load_robot
+        from isaac_ext.pathvla_unitree.tasks.scene_builder import build_scene
+        from isaac_ext.pathvla_unitree.tasks.waypoint_controller import WaypointController
+
         stage = create_stage()
         semantic_scene = build_scene(stage, scene_cfg, logger)
         robot_handle = load_robot(
