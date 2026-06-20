@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 
 import imageio.v2 as imageio
@@ -44,11 +45,17 @@ class IsaacRecorder:
             return None, None
         video_path = self.output_dir / "rollout.mp4"
         final_frame_path = self.output_dir / "final_frame.png"
+        existing_frames = self._resolve_existing_frames()
+        if not existing_frames:
+            if self.require_video:
+                raise RecordingError("No captured frame files were written before video finalization.")
+            self.logger.warning("No captured frame files were present; skipping video finalization.")
+            return None, None
         try:
             with imageio.get_writer(video_path, fps=10, format="FFMPEG") as writer:
-                for frame_path in self.frame_paths:
+                for frame_path in existing_frames:
                     writer.append_data(imageio.imread(frame_path))
-            imageio.imwrite(final_frame_path, imageio.imread(self.frame_paths[-1]))
+            imageio.imwrite(final_frame_path, imageio.imread(existing_frames[-1]))
         except Exception as exc:  # noqa: BLE001
             if self.require_video:
                 raise RecordingError(f"Failed to finalize video: {exc}") from exc
@@ -60,3 +67,16 @@ class IsaacRecorder:
         trace_path = self.output_dir / "trace.json"
         trace_path.write_text(json.dumps(trace, indent=2), encoding="utf-8")
         return str(trace_path)
+
+    def _resolve_existing_frames(self) -> list[Path]:
+        deadline = time.time() + 5.0
+        pending = list(self.frame_paths)
+        while pending and time.time() < deadline:
+            pending = [frame_path for frame_path in pending if not frame_path.exists()]
+            if pending:
+                time.sleep(0.1)
+        existing_frames = [frame_path for frame_path in self.frame_paths if frame_path.exists()]
+        missing_frames = [str(frame_path) for frame_path in self.frame_paths if not frame_path.exists()]
+        if missing_frames:
+            self.logger.warning("Skipping missing captured frames during video finalization: %s", missing_frames)
+        return existing_frames
