@@ -68,7 +68,8 @@ def create_run(request: RunRequestModel):
     write_json(output_dir / "request.json", request_payload)
 
     command = [
-        "python3",
+        "bash",
+        str(APP_ROOT / "scripts" / "isaac_python.sh"),
         "-m",
         "isaac_ext.pathvla_unitree.tasks.room_nav_env",
         "--scene",
