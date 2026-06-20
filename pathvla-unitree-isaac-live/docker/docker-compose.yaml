@@ -1,0 +1,45 @@
+services:
+  pathvla-isaac:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        ISAAC_BASE_IMAGE: ${ISAAC_BASE_IMAGE:?Set ISAAC_BASE_IMAGE to a real Isaac Sim/Lab image}
+    image: pathvla-unitree-isaac-live:latest
+    container_name: pathvla-isaac
+    environment:
+      ACCEPT_EULA: "Y"
+      PRIVACY_CONSENT: "Y"
+      VLA_ENDPOINT: ${VLA_ENDPOINT:-}
+      VLA_API_KEY: ${VLA_API_KEY:-}
+      VLA_MODEL_NAME: ${VLA_MODEL_NAME:-}
+      UNITREE_G1_USD_PATH: ${UNITREE_G1_USD_PATH:-}
+      BREV_PUBLIC_HOST: ${BREV_PUBLIC_HOST:-}
+      LIVESTREAM_PORTS: ${LIVESTREAM_PORTS:-8211,8899,49100-49200}
+      PATHVLA_API_HOST: ${PATHVLA_API_HOST:-0.0.0.0}
+      PATHVLA_API_PORT: ${PATHVLA_API_PORT:-8000}
+      PATHVLA_DASHBOARD_PORT: ${PATHVLA_DASHBOARD_PORT:-8501}
+      PATHVLA_OUTPUT_ROOT: ${PATHVLA_OUTPUT_ROOT:-outputs}
+    working_dir: /workspace/pathvla-unitree-isaac-live
+    volumes:
+      - ..:/workspace/pathvla-unitree-isaac-live
+      - ../outputs:/workspace/pathvla-unitree-isaac-live/outputs
+      - ${HOME}/.cache/ov:/root/.cache/ov
+      - ${HOME}/.nvidia-omniverse:/root/.nvidia-omniverse
+      - ${HOME}/.local/share/ov:/root/.local/share/ov
+    ports:
+      - "${PATHVLA_API_PORT:-8000}:8000"
+      - "${PATHVLA_DASHBOARD_PORT:-8501}:8501"
+      - "8211:8211"
+      - "8899:8899"
+      - "49100-49200:49100-49200/udp"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    shm_size: "4gb"
+    stdin_open: true
+    tty: true
