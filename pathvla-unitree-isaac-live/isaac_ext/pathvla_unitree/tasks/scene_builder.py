@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 
-from pxr import Gf, UsdGeom, UsdPhysics
+from pxr import Gf, UsdGeom, UsdLux, UsdPhysics
 
 from isaac_ext.pathvla_unitree.tasks.object_spawner import spawn_semantic_object
 from isaac_ext.pathvla_unitree.tasks.room_nav_env_cfg import SceneConfigModel
@@ -58,14 +58,37 @@ def _spawn_walls(stage, scene_cfg: SceneConfigModel) -> None:
         UsdPhysics.CollisionAPI.Apply(wall.GetPrim())
 
 
+def _spawn_lighting(stage) -> None:
+    dome = UsdLux.DomeLight.Define(stage, "/World/Lights/DomeLight")
+    dome.CreateIntensityAttr(1400.0)
+    dome.CreateExposureAttr(1.5)
+    dome.CreateColorAttr(Gf.Vec3f(1.0, 0.98, 0.94))
+
+    key_light = UsdLux.DistantLight.Define(stage, "/World/Lights/KeyLight")
+    key_light.CreateIntensityAttr(3500.0)
+    key_light.CreateAngleAttr(0.6)
+    key_light.CreateColorAttr(Gf.Vec3f(1.0, 0.97, 0.92))
+    key_xform = UsdGeom.Xformable(key_light)
+    key_xform.AddRotateXYZOp().Set(Gf.Vec3f(315.0, 0.0, 35.0))
+
+    fill_light = UsdLux.SphereLight.Define(stage, "/World/Lights/FillLight")
+    fill_light.CreateIntensityAttr(45000.0)
+    fill_light.CreateRadiusAttr(0.5)
+    fill_light.CreateColorAttr(Gf.Vec3f(0.92, 0.95, 1.0))
+    fill_xform = UsdGeom.Xformable(fill_light)
+    fill_xform.AddTranslateOp().Set(Gf.Vec3d(0.0, -1.5, 3.2))
+
+
 def build_scene(stage, scene_cfg: SceneConfigModel, logger) -> SemanticSceneState:
     stage.DefinePrim("/World", "Xform")
     stage.DefinePrim("/World/Scene", "Xform")
     stage.DefinePrim("/World/Scene/Objects", "Xform")
     stage.DefinePrim("/World/Scene/Walls", "Xform")
     stage.DefinePrim("/World/Cameras", "Xform")
+    stage.DefinePrim("/World/Lights", "Xform")
     _spawn_ground_plane(stage, scene_cfg.scene.bounds)
     _spawn_walls(stage, scene_cfg)
+    _spawn_lighting(stage)
 
     object_states: list[SemanticObjectState] = []
     for object_cfg in scene_cfg.scene.objects:
@@ -84,8 +107,9 @@ def build_scene(stage, scene_cfg: SceneConfigModel, logger) -> SemanticSceneStat
     camera_paths: list[str] = []
     for camera_cfg in scene_cfg.scene.cameras:
         camera = UsdGeom.Camera.Define(stage, f"/World/Cameras/{camera_cfg.name}")
-        camera.CreateFocalLengthAttr(18.0)
+        camera.CreateFocalLengthAttr(28.0 if camera_cfg.name == "main_camera" else 18.0)
         camera.CreateClippingRangeAttr(Gf.Vec2f(0.01, 1000.0))
+        camera.CreateExposureAttr(0.8)
         _set_transform_with_lookat(camera, camera_cfg.pose, camera_cfg.look_at)
         camera_paths.append(f"/World/Cameras/{camera_cfg.name}")
         logger.info("Created camera %s", camera_cfg.name)

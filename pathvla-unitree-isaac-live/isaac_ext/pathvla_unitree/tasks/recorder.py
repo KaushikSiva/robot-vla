@@ -10,10 +10,11 @@ from pathvla.errors import RecordingError
 
 
 class IsaacRecorder:
-    def __init__(self, output_dir: Path, logger, require_video: bool):
+    def __init__(self, output_dir: Path, logger, require_video: bool, preferred_camera_path: str | None = None):
         self.output_dir = output_dir
         self.logger = logger
         self.require_video = require_video
+        self.preferred_camera_path = preferred_camera_path
         self.frames_dir = self.output_dir / "frames"
         self.frames_dir.mkdir(parents=True, exist_ok=True)
         self.frame_paths: list[Path] = []
@@ -33,6 +34,12 @@ class IsaacRecorder:
                 raise RecordingError("No active viewport available for capture.")
             self.logger.warning("No active viewport available; video recording disabled.")
             return
+
+        if self.preferred_camera_path:
+            try:
+                viewport.camera_path = self.preferred_camera_path
+            except Exception as exc:  # noqa: BLE001
+                self.logger.warning("Failed to switch viewport to preferred camera %s: %s", self.preferred_camera_path, exc)
 
         frame_path = self.frames_dir / f"frame_{frame_index:05d}.png"
         capture_viewport_to_file(viewport, str(frame_path))

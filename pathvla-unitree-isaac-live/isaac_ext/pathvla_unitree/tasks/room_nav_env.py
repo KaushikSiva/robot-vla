@@ -164,7 +164,13 @@ def run(args) -> RunResultModel:
             {"waypoint_plans": [wp.model_dump(mode="json") for wp in waypoint_plans]},
         )
 
-        recorder = IsaacRecorder(run_dir, logger, require_video=request.require_video)
+        preferred_camera_path = semantic_scene.camera_prim_paths[0] if semantic_scene.camera_prim_paths else None
+        recorder = IsaacRecorder(
+            run_dir,
+            logger,
+            require_video=request.require_video,
+            preferred_camera_path=preferred_camera_path,
+        )
         controller = WaypointController(
             stage=stage,
             robot_handle=robot_handle,
