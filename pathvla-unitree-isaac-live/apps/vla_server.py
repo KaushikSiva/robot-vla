@@ -124,6 +124,43 @@ def _extract_response_text(response) -> str:
         raise HTTPException(status_code=500, detail=f"Could not extract structured model output: {exc}") from exc
 
 
+def _infer_with_responses(client: OpenAI, model_name: str, payload: VLARequestModel) -> str:
+    response = client.responses.create(
+        model=model_name,
+        input=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": _build_user_prompt(payload)},
+        ],
+        text={
+            "format": {
+                "type": "json_schema",
+                "name": PLAN_JSON_SCHEMA["name"],
+                "strict": True,
+                "schema": PLAN_JSON_SCHEMA["schema"],
+            }
+        },
+    )
+    return _extract_response_text(response)
+
+
+def _infer_with_chat_completions(client: OpenAI, model_name: str, payload: VLARequestModel) -> str:
+    response = client.chat.completions.create(
+        model=model_name,
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": _build_user_prompt(payload)},
+        ],
+        response_format={
+            "type": "json_schema",
+            "json_schema": PLAN_JSON_SCHEMA,
+        },
+    )
+    content = response.choices[0].message.content
+    if not content:
+        raise HTTPException(status_code=500, detail="Chat completions backend returned empty content.")
+    return content
+
+
 @app.get("/health", response_model=HealthResponseModel)
 def health():
     return HealthResponseModel(ok=True, service="pathvla-vla-server", version=__version__)
@@ -139,16 +176,15 @@ def infer(request: VLARequestModel):
     client = _require_openai_client()
     model_name = _resolve_model_name(payload)
     try:
-        response = client.responses.create(
-            model=model_name,
-            input=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": _build_user_prompt(payload)},
-            ],
-            text={"format": {"type": "json_schema", "name": PLAN_JSON_SCHEMA["name"], "strict": True, "schema": PLAN_JSON_SCHEMA["schema"]}},
-        )
+        raw_text = _infer_with_responses(client, model_name, payload)
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=502, detail=f"OpenAI request failed: {exc}") from exc
+        try:
+            raw_text = _infer_with_chat_completions(client, model_name, payload)
+        except Exception as chat_exc:  # noqa: BLE001
+            raise HTTPException(
+                status_code=502,
+                detail=f"OpenAI-compatible request failed. responses error: {exc}; chat.completions error: {chat_exc}",
+            ) from chat_exc
 
-    parsed = validate_plan_dict(json.loads(_extract_response_text(response)))
+    parsed = validate_plan_dict(json.loads(raw_text))
     return parsed
