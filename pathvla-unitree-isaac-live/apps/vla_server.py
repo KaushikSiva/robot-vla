@@ -172,6 +172,28 @@ def _normalize_plan_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if "subgoals" in payload:
         return payload
 
+    if "type" in payload and "target" in payload:
+        constraints = payload.get("constraints")
+        if not isinstance(constraints, dict):
+            constraints = {}
+        avoid = payload.get("avoid")
+        safe_distance_m = payload.get("safe_distance_m")
+        if isinstance(avoid, list) and "avoid" not in constraints:
+            constraints["avoid"] = avoid
+        if isinstance(safe_distance_m, (int, float)) and "safe_distance_m" not in constraints:
+            constraints["safe_distance_m"] = float(safe_distance_m)
+        constraints.setdefault("avoid", [])
+        constraints.setdefault("safe_distance_m", 0.6)
+        return {
+            "subgoals": [
+                {
+                    "type": payload["type"],
+                    "target": payload["target"],
+                    "constraints": constraints,
+                }
+            ]
+        }
+
     if "action" in payload and "args" in payload and isinstance(payload["args"], dict):
         action = payload.get("type") or payload.get("action")
         args = payload["args"]
