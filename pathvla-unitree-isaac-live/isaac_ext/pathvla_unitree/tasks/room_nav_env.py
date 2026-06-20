@@ -5,7 +5,7 @@ import json
 import sys
 from pathlib import Path
 
-from pathvla.errors import ConfigurationError, IsaacRuntimeError, PathVLAError, PlanningError
+from pathvla.errors import ConfigurationError, IsaacRuntimeError, PathVLAError, PlanningError, VLAEndpointError
 from pathvla.logging_utils import configure_run_logger
 from pathvla.metrics import summarize_run_metrics
 from pathvla.plan_validator import validate_plan_dict
@@ -59,12 +59,26 @@ def build_plan(args, scene_snapshot, run_dir: Path, logger):
         vla_config = load_vla_config()
         client = HTTPVLAClient(load_vla_endpoint_config(timeout_s=vla_config.vla.request_timeout_s))
         logger.info("Calling VLA endpoint for instruction: %s", args.instruction)
-        plan = client.infer(
-            instruction=args.instruction,
-            scene=scene_snapshot,
-            output_dir=run_dir,
-            include_camera_images=vla_config.vla.include_camera_images,
-        )
+        try:
+            plan = client.infer(
+                instruction=args.instruction,
+                scene=scene_snapshot,
+                output_dir=run_dir,
+                include_camera_images=vla_config.vla.include_camera_images,
+            )
+        except VLAEndpointError as exc:
+            if not args.allow_rule_planner:
+                raise
+            message = (
+                "DEBUG ONLY: VLA request failed and rule planner fallback is enabled. "
+                "This is not real VLA mode."
+            )
+            logger.warning("%s VLA error: %s", message, exc)
+            print(message)
+            logger.info("Calling debug rule planner fallback for instruction: %s", args.instruction)
+            plan = rule_based_debug_plan(args.instruction)
+            logger.info("Received debug rule planner fallback response with %d subgoals", len(plan.subgoals))
+            return plan
         logger.info("Received VLA response with %d subgoals", len(plan.subgoals))
         return plan
     if args.allow_rule_planner:

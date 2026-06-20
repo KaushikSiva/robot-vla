@@ -307,3 +307,4 @@ Integration tests require a configured Isaac environment and are marked with `py
 - G1 asset missing: set `UNITREE_G1_USD_PATH` or rerun with `--allow-proxy`.
 - No controller configured: provide a real controller config or rerun with `--allow-kinematic-control`.
 - VLA invalid response: inspect `outputs/<run_id>/bad_vla_response.json`.
+- VLA endpoint error or HTTP 500: strict mode fails loudly; only `--allow-rule-planner` enables a debug-only fallback planner.
