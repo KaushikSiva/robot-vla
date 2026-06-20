@@ -3,7 +3,6 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
-export PYTHONPATH="$ROOT:${PYTHONPATH:-}"
 
 SCENE="${1:-room}"
 INSTRUCTION="${2:-Go to the red bin, avoid the chair, inspect the table, then return home.}"
@@ -22,7 +21,8 @@ bash scripts/check_gpu.sh
 bash scripts/check_isaac.sh
 
 CMD=(
-  python3 -m isaac_ext.pathvla_unitree.tasks.room_nav_env
+  bash scripts/isaac_python.sh
+  -m isaac_ext.pathvla_unitree.tasks.room_nav_env
   --scene "$SCENE"
   --instruction "$INSTRUCTION"
   --robot unitree_g1
@@ -43,4 +43,4 @@ if [[ "$ALLOW_KINEMATIC" == "1" ]]; then
   CMD+=(--allow-kinematic-control)
 fi
 
-exec "${CMD[@]}"
+exec docker compose -f docker/docker-compose.yaml run --rm pathvla-isaac "${CMD[@]}"

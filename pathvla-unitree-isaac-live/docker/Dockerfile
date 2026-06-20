@@ -8,8 +8,9 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /workspace/pathvla-unitree-isaac-live
 
+COPY scripts/isaac_python.sh /tmp/isaac_python.sh
 COPY requirements-dev.txt /tmp/requirements-dev.txt
-RUN python3 -m pip install --no-cache-dir -r /tmp/requirements-dev.txt
+RUN bash /tmp/isaac_python.sh -m pip install --no-cache-dir -r /tmp/requirements-dev.txt
 
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

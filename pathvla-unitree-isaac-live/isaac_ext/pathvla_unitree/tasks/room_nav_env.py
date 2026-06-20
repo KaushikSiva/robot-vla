@@ -14,18 +14,12 @@ from pathvla.schemas import RunMode, RunRequestModel, RunResultModel
 from pathvla.vla_client import HTTPVLAClient, load_vla_endpoint_config, rule_based_debug_plan
 from pathvla.waypoint_planner import AStarWaypointPlanner
 
-from isaac_ext.pathvla_unitree.tasks.livestream import configure_livestream
-from isaac_ext.pathvla_unitree.tasks.observations import get_prim_translation, refresh_semantic_scene_poses
-from isaac_ext.pathvla_unitree.tasks.recorder import IsaacRecorder
-from isaac_ext.pathvla_unitree.tasks.robot_loader import load_robot
 from isaac_ext.pathvla_unitree.tasks.room_nav_env_cfg import (
     load_livestream_config,
     load_robot_config,
     load_scene_config,
     load_vla_config,
 )
-from isaac_ext.pathvla_unitree.tasks.scene_builder import build_scene
-from isaac_ext.pathvla_unitree.tasks.waypoint_controller import WaypointController
 
 
 def resolve_simulation_app_class():
@@ -97,6 +91,13 @@ def parse_args(argv: list[str] | None = None):
 
 
 def run(args) -> RunResultModel:
+    from isaac_ext.pathvla_unitree.tasks.livestream import configure_livestream
+    from isaac_ext.pathvla_unitree.tasks.observations import get_prim_translation, refresh_semantic_scene_poses
+    from isaac_ext.pathvla_unitree.tasks.recorder import IsaacRecorder
+    from isaac_ext.pathvla_unitree.tasks.robot_loader import load_robot
+    from isaac_ext.pathvla_unitree.tasks.scene_builder import build_scene
+    from isaac_ext.pathvla_unitree.tasks.waypoint_controller import WaypointController
+
     request = RunRequestModel(
         instruction=args.instruction,
         scene=args.scene,

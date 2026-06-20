@@ -3,9 +3,11 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
-export PYTHONPATH="$ROOT:${PYTHONPATH:-}"
 
-python3 - <<'PY'
+docker compose -f docker/docker-compose.yaml run --rm pathvla-isaac bash -lc '
+set -euo pipefail
+export PYTHONPATH=/workspace/pathvla-unitree-isaac-live:${PYTHONPATH:-}
+bash scripts/isaac_python.sh - <<'"'"'PY'"'"'
 from isaac_ext.pathvla_unitree.tasks.room_nav_env import launch_simulation_app, resolve_simulation_app_class
 
 print("[isaac] Resolving SimulationApp")
@@ -27,3 +29,4 @@ app.update()
 app.close()
 print("[isaac] Isaac runtime checks passed")
 PY
+'
