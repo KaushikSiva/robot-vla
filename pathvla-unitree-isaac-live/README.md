@@ -84,7 +84,7 @@ Optional:
 - `PATHVLA_API_PORT`
 - `PATHVLA_DASHBOARD_PORT`
 
-See [.env.example](/Users/kaushiksivakumar/workspace/robot-vla/pathvla-unitree-isaac-live/.env.example).
+See [.env.example](./.env.example).
 
 ## Brev Setup
 
@@ -136,7 +136,7 @@ make check-livestream
 make live-demo
 ```
 
-The system prints exact connection instructions including `BREV_PUBLIC_HOST` and the configured ports from [config/livestream.yaml](/Users/kaushiksivakumar/workspace/robot-vla/pathvla-unitree-isaac-live/config/livestream.yaml).
+The system prints exact connection instructions including `BREV_PUBLIC_HOST` and the configured ports from [config/livestream.yaml](./config/livestream.yaml).
 
 Open or forward the required ports on the VM. Then connect from the Mac using the Isaac WebRTC streaming client or the supported browser/client path documented by your Isaac build.
 
