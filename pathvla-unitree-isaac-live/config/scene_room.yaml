@@ -1,5 +1,7 @@
 scene:
   name: room
+  environment_usd_path_env: ISAAC_ROOM_ENV_USD_PATH
+  environment_prim_path: /World/Scene/Environment
   bounds:
     x: [-4.0, 4.0]
     y: [-4.0, 4.0]

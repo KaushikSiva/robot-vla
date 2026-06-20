@@ -1,5 +1,7 @@
 scene:
   name: warehouse
+  environment_usd_path_env: ISAAC_WAREHOUSE_ENV_USD_PATH
+  environment_prim_path: /World/Scene/Environment
   bounds:
     x: [-8.0, 8.0]
     y: [-6.0, 6.0]

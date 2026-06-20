@@ -50,6 +50,8 @@ class SceneInnerConfigModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str
+    environment_usd_path_env: str | None = None
+    environment_prim_path: str = "/World/Scene/Environment"
     bounds: SceneBoundsModel
     room: RoomGeometryModel
     robot_spawn: list[float] = Field(min_length=3, max_length=3)

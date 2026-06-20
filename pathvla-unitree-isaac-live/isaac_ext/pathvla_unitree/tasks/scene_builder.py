@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import math
+import os
+from pathlib import Path
 
 from pxr import Gf, UsdGeom, UsdLux, UsdPhysics
 
@@ -58,6 +60,24 @@ def _spawn_walls(stage, scene_cfg: SceneConfigModel) -> None:
         UsdPhysics.CollisionAPI.Apply(wall.GetPrim())
 
 
+def _maybe_load_environment_asset(stage, scene_cfg: SceneConfigModel, logger) -> bool:
+    env_var = scene_cfg.scene.environment_usd_path_env
+    if not env_var:
+        return False
+    usd_path = os.getenv(env_var)
+    if not usd_path:
+        return False
+    if not Path(usd_path).exists():
+        logger.warning("Environment USD path from %s does not exist: %s. Falling back to primitive scene.", env_var, usd_path)
+        return False
+
+    prim_path = scene_cfg.scene.environment_prim_path
+    env_prim = stage.DefinePrim(prim_path, "Xform")
+    env_prim.GetReferences().AddReference(usd_path)
+    logger.info("Loaded environment asset from %s into %s", usd_path, prim_path)
+    return True
+
+
 def _spawn_lighting(stage) -> None:
     dome = UsdLux.DomeLight.Define(stage, "/World/Lights/DomeLight")
     dome.CreateIntensityAttr(350.0)
@@ -86,8 +106,10 @@ def build_scene(stage, scene_cfg: SceneConfigModel, logger) -> SemanticSceneStat
     stage.DefinePrim("/World/Scene/Walls", "Xform")
     stage.DefinePrim("/World/Cameras", "Xform")
     stage.DefinePrim("/World/Lights", "Xform")
-    _spawn_ground_plane(stage, scene_cfg.scene.bounds)
-    _spawn_walls(stage, scene_cfg)
+    loaded_environment_asset = _maybe_load_environment_asset(stage, scene_cfg, logger)
+    if not loaded_environment_asset:
+        _spawn_ground_plane(stage, scene_cfg.scene.bounds)
+        _spawn_walls(stage, scene_cfg)
     _spawn_lighting(stage)
 
     object_states: list[SemanticObjectState] = []
