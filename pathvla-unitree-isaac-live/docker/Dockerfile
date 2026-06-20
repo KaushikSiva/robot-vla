@@ -12,8 +12,7 @@ COPY scripts/isaac_python.sh /tmp/isaac_python.sh
 COPY requirements-dev.txt /tmp/requirements-dev.txt
 RUN bash /tmp/isaac_python.sh -m pip install --no-cache-dir -r /tmp/requirements-dev.txt
 
-COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY --chmod=755 docker/entrypoint.sh /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["bash"]
