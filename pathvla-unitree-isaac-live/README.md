@@ -73,6 +73,8 @@ pathvla-unitree-isaac-live/
 - `VLA_ENDPOINT`
 - `VLA_API_KEY` optional
 - `VLA_MODEL_NAME` optional
+- `OPENAI_API_KEY` for the bundled real VLA server
+- `OPENAI_MODEL` optional, defaults in `.env.example`
 - `UNITREE_G1_USD_PATH`
 - `BREV_PUBLIC_HOST`
 - `LIVESTREAM_PORTS`
@@ -211,6 +213,39 @@ make dashboard
 ```
 
 The dashboard controls real Isaac runs. It does not emulate simulation in the browser.
+
+## Real VLA Server
+
+This repo now includes a real HTTP VLA server at [apps/vla_server.py](./apps/vla_server.py).
+
+Two supported deployment modes:
+
+1. Docker Compose service on the same VM
+
+```bash
+docker compose -f docker/docker-compose.yaml up -d vla-server
+export VLA_ENDPOINT="http://vla-server:5555/infer"
+python scripts/test_vla_endpoint.py
+```
+
+2. Host process on the same VM
+
+```bash
+make vla
+export VLA_ENDPOINT="http://host.docker.internal:5555/infer"
+python scripts/test_vla_endpoint.py
+```
+
+Important:
+
+- `127.0.0.1` does not work from the Isaac container unless the VLA server is running inside that same container.
+- If the VLA server runs as a separate process on the same VM, use `host.docker.internal`.
+- If the VLA server runs as the bundled compose service, use `http://vla-server:5555/infer`.
+
+About GR00T:
+
+- GR00T can be part of a robotics stack, but it is not required for this repo's VLA planning endpoint.
+- In this project, the VLA server is the natural-language-to-subgoal planner. Humanoid locomotion is a separate controller problem.
 
 ## Evaluation
 

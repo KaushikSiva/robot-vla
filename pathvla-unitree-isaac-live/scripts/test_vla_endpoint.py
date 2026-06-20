@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import json
-import sys
-from pathlib import Path
 
 from pathvla.run_registry import get_output_root
 from pathvla.schemas import SceneSnapshotModel

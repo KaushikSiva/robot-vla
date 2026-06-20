@@ -9,7 +9,7 @@ ALLOW_RULE_PLANNER ?= 0
 
 export PYTHONPATH
 
-.PHONY: setup-brev check-gpu check-isaac check-livestream build live-demo recorded-demo api dashboard eval test integration-test clean
+.PHONY: setup-brev check-gpu check-isaac check-livestream build live-demo recorded-demo api vla dashboard eval test integration-test clean
 
 setup-brev:
 	bash scripts/setup_brev.sh
@@ -34,6 +34,9 @@ recorded-demo:
 
 api:
 	bash scripts/start_api.sh
+
+vla:
+	bash scripts/start_vla.sh
 
 dashboard:
 	bash scripts/start_dashboard.sh
