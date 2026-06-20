@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
@@ -68,6 +69,7 @@ Prefer short subgoal sequences grounded in the instruction and scene.
 If the instruction implies returning home, use target `home_marker`.
 For avoidance, include named objects in constraints.avoid.
 Use safe_distance_m between 0.4 and 1.0 depending on clutter.
+Do not emit reasoning, explanations, markdown, or code fences.
 """
 
 app = FastAPI(title="PathVLA VLA Server", version=__version__)
@@ -122,6 +124,48 @@ def _extract_response_text(response) -> str:
         return json.dumps(response.output[0].content[0].json)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=f"Could not extract structured model output: {exc}") from exc
+
+
+def _extract_json_object(raw_text: str) -> dict[str, Any]:
+    cleaned = raw_text.strip()
+    cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s*```$", "", cleaned)
+    cleaned = re.sub(r"<\|think\|>.*?(?:<turn\|>|$)", "", cleaned, flags=re.DOTALL)
+    cleaned = re.sub(r"<think>.*?</think>", "", cleaned, flags=re.DOTALL)
+    cleaned = cleaned.strip()
+
+    try:
+        parsed = json.loads(cleaned)
+        if isinstance(parsed, dict):
+            return parsed
+    except json.JSONDecodeError:
+        pass
+
+    start = cleaned.find("{")
+    if start == -1:
+        raise HTTPException(status_code=502, detail=f"Model did not return JSON. Raw output: {cleaned[:500]}")
+
+    depth = 0
+    for index in range(start, len(cleaned)):
+        char = cleaned[index]
+        if char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                candidate = cleaned[start : index + 1]
+                try:
+                    parsed = json.loads(candidate)
+                except json.JSONDecodeError as exc:
+                    raise HTTPException(
+                        status_code=502,
+                        detail=f"Model returned invalid JSON candidate: {candidate[:500]} ({exc})",
+                    ) from exc
+                if isinstance(parsed, dict):
+                    return parsed
+                break
+
+    raise HTTPException(status_code=502, detail=f"Could not recover JSON object from model output: {cleaned[:500]}")
 
 
 def _infer_with_responses(client: OpenAI, model_name: str, payload: VLARequestModel) -> str:
@@ -186,5 +230,5 @@ def infer(request: VLARequestModel):
                 detail=f"OpenAI-compatible request failed. responses error: {exc}; chat.completions error: {chat_exc}",
             ) from chat_exc
 
-    parsed = validate_plan_dict(json.loads(raw_text))
+    parsed = validate_plan_dict(_extract_json_object(raw_text))
     return parsed
